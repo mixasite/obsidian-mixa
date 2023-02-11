@@ -142,11 +142,11 @@ function createSiteInfo(containerEl: HTMLElement, settings: MixaSettings) {
 
 function refreshSiteInfo(containerEl: HTMLElement, settings: MixaSettings) {
 	if (settings.siteUrl) {
-		containerEl.find('#mixa-site-url').href = settings.siteUrl
-		containerEl.find('#mixa-site-url').innerText = settings.siteUrl
-		containerEl.find('#mixa-site-edit-url').href = settings.siteEditUrl
-		containerEl.find('#mixa-site-edit-url').innerText =  settings.siteEditUrl
-		containerEl.findAll('.mixa-setting-item').forEach(e => e.show())
+		(containerEl.find('#mixa-site-url') as HTMLAnchorElement).href = settings.siteUrl;
+		containerEl.find('#mixa-site-url').innerText = settings.siteUrl;
+		(containerEl.find('#mixa-site-edit-url') as HTMLAnchorElement).href = settings.siteEditUrl;
+		containerEl.find('#mixa-site-edit-url').innerText =  settings.siteEditUrl;
+		containerEl.findAll('.mixa-setting-item').forEach(e => e.show());
 	} else {
 		containerEl.findAll('.mixa-setting-item').forEach(e => e.hide())
 	}
