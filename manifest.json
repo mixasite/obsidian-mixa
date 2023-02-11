@@ -1,0 +1,10 @@
+{
+	"id": "mixa-obisidian",
+	"name": "Mixa",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Publish your notes and blog posts with Mixa directly from Obsidian",
+	"author": "Mixa",
+	"authorUrl": "https://mixa.site",
+	"isDesktopOnly": false
+}
