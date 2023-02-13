@@ -7,7 +7,7 @@ import { S3Client } from "@aws-sdk/client-s3";
 import S3SyncClient from 's3-sync-client';
 
 const API_BASE = 'https://app.mixa.site/api'
-const BUCKET_NAME = 'asset.mixa.site'
+const BUCKET_NAME = 'resource.mixa.site'
 
 const client = axios.create({
     baseURL: API_BASE,
