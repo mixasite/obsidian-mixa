@@ -1,7 +1,12 @@
 # Mixa
 Mixa is a 1-click no-code site builder with tons of features for you to share your notes and blog posts in seconds.
 
-[![Mixa Demo](./mixa_thumbnail.png)](https://www.youtube.com/watch?v=-Ylp5Dm9sVo)
+## Mixa Demo
+### With Obsidian
+[![Mixa Obsidian Demo](./mixa_obs_thumbnail.png)](https://youtu.be/FrvZd2pdX-g)
+
+### With .zip file
+[![Mixa Demo](./mixa_thumbnail.png)](https://youtu.be/-Ylp5Dm9sVo)
 
 ## How to use
 1. Login to the [mixa.site](https://mixa.site)
