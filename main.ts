@@ -18,6 +18,7 @@ export default class MixaPlugin extends Plugin {
 
 		// This creates an icon in the left ribbon.
 		this.addRibbonIcon('paper-plane', 'Publish with Mixa', async (evt: MouseEvent) => {
+			new Notice('Publishing your site, hang tight...');
 			// Called when the user clicks the icon.
 			await syncData(this.settings)
 			new Notice('Your site is live');
