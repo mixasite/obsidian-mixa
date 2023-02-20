@@ -1,4 +1,4 @@
-import { FileSystemAdapter, Notice } from "obsidian";
+import { FileSystemAdapter, Notice, Vault } from "obsidian";
 import { join } from 'path'
 import { existsSync } from 'fs'
 import axios from 'axios';
@@ -8,10 +8,16 @@ import S3SyncClient from 's3-sync-client';
 
 const API_BASE = 'https://app.mixa.site/api'
 const BUCKET_NAME = 'resource.mixa.site'
+const S3_URL = 'https://s3.us-east-1.amazonaws.com'
+const S3_REGION = 'us-east-1'
 
 const client = axios.create({
     baseURL: API_BASE,
 });
+
+function stripSlash(str: string) {
+    return str?.replace(/^\/*|\/*$/g, "")
+}
 
 function getBasePath() {
     const adapter = app.vault.adapter;
@@ -27,11 +33,44 @@ export async function getSiteData(secretToken: string) {
     const { data } = await client.get(`/site/token/${secretToken}/info`)
     return data
 }
-export async function syncData(settings: MixaSettings) {
-    const rootFolder = join(getBasePath(), settings.siteFolder)
 
-    if (!existsSync(rootFolder)) {
+export async function getAdditionalFiles(vault: Vault, siteFolder: string) {
+    const sanitizeRegex = /\.*\/*(.*?)?( *\|.*)?$/g
+    const referenceRegex = /!?\[(?:\[|\]\()(.*?)(?:\]\]|\)|\|)/g
+    const matches = (await Promise.all(vault.getMarkdownFiles()
+        .filter(f => f.path.startsWith(siteFolder))
+        .map(f => vault.cachedRead(f))))
+        .join()
+        .matchAll(referenceRegex)
+    const referencedFiles: string[] = []
+    for (const match of matches) {
+        referencedFiles.push(match[1].replace(sanitizeRegex, '$1'))
+    }
+
+    // find actual paths of the referenced files
+    // check if they're not part of the siteFolder
+    const localFiles = vault.getFiles().map(f => f.path).map(f => f.replace(sanitizeRegex, '$1')).filter(f => !f.startsWith(siteFolder))
+    // add them to sync
+    const filesToCopy = localFiles.filter(lf => referencedFiles.some(rf => lf.endsWith(rf) || lf.endsWith(`${rf}.md`)))
+    return filesToCopy
+}
+
+export async function syncData(settings: MixaSettings, vault: Vault) {
+    const siteFolder = stripSlash(settings.siteFolder)
+    const rootFolderAbsPath = getBasePath()
+    const localFolder = join(rootFolderAbsPath, siteFolder)
+
+    if (!existsSync(localFolder)) {
         throw Error(`Site folder you specified does not exist: ${settings.siteFolder}`)
+    }
+
+    let additionalFiles: string[] = []
+    if (settings.publishExternal) {
+        try {
+            additionalFiles = await getAdditionalFiles(vault, siteFolder)
+        } catch (err) {
+            console.error(err)
+        }
     }
 
     const { data: creds } = await client.get(`/site/token/${settings.secretToken}/auth`)
@@ -41,30 +80,33 @@ export async function syncData(settings: MixaSettings) {
 
     const s3Path = `s3://${BUCKET_NAME}/${settings.subdomain}`
     try {
-        await syncToS3(creds, rootFolder, s3Path)
+        await syncToS3(creds, rootFolderAbsPath, siteFolder, s3Path, additionalFiles)
         await client.post(`/site/token/${settings.secretToken}/build`)
-    } catch(err) {
+    } catch (err) {
         console.error(err)
         throw err
     }
 }
 
-function syncToS3(creds: any, localFolder: string, s3Path: string) {
+async function syncToS3(creds: any, rootFolderAbsPath: string, siteFolder: string, s3Path: string, additionalFiles: string[]) {
     const s3Client = new S3Client({
-        region: 'us-east-1',
+        region: S3_REGION,
         forcePathStyle: true,
         credentials: creds,
-        endpoint: `https://s3.us-east-1.amazonaws.com`,
+        endpoint: S3_URL,
     });
     const { sync } = new S3SyncClient({ client: s3Client });
 
-    console.log(`syncing files to s3. local: ${localFolder}, remote: ${s3Path}`);
-    return sync(localFolder, s3Path, {
+    console.log(`syncing files to s3. local: ${siteFolder}, remote: ${s3Path}`);
+    console.log(`additional files being sent ${additionalFiles}`);
+
+    return await sync(rootFolderAbsPath, s3Path, {
         del: true,
+        relocations: [
+            [siteFolder, '']
+        ],
         filters: [
-            {
-                exclude: (key: string) => key.split('/').some(n => n.startsWith('.'))
-            }
+            { exclude: (key: string) => key.split('/').some(n => n.startsWith('.')) || (siteFolder && !key.startsWith(`${siteFolder}/`) && !additionalFiles.contains(key)) },
         ],
     })
 }
