@@ -1,5 +1,5 @@
 import { App, debounce, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { getSiteData, syncData } from 'src/sync';
+import { getSiteData, syncData } from './sync';
 import { MixaSettings } from 'types';
 
 const DEFAULT_SETTINGS: MixaSettings = {
@@ -9,7 +9,7 @@ const DEFAULT_SETTINGS: MixaSettings = {
 	publishExternal: false,
 	siteUrl: '',
 	siteEditUrl: '',
-}
+};
 
 export default class MixaPlugin extends Plugin {
 	settings: MixaSettings;
@@ -21,7 +21,7 @@ export default class MixaPlugin extends Plugin {
 		this.addRibbonIcon('paper-plane', 'Publish with Mixa', async (evt: MouseEvent) => {
 			new Notice('Publishing your site, hang tight...');
 			// Called when the user clicks the icon.
-			await syncData(this.settings, this.app.vault)
+			await syncData(this.settings, this.app.vault);
 			new Notice('Your site is live');
 		});
 
@@ -44,18 +44,18 @@ export default class MixaPlugin extends Plugin {
 
 class MixaSettingTab extends PluginSettingTab {
 	plugin: MixaPlugin;
-	infoDiv: HTMLDivElement
+	infoDiv: HTMLDivElement;
 
 	constructor(app: App, plugin: MixaPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
-	async updateSiteSettings(site: any|null, msg?: string): Promise<void> {
-		this.plugin.settings.subdomain = site?.subdomain || ''
-		this.plugin.settings.siteUrl = site?.siteUrl || '' 
-		this.plugin.settings.siteEditUrl = site?.siteEditUrl || ''
-		this.infoDiv.textContent = msg ? msg : ''
+	async updateSiteSettings(site: any | null, msg?: string): Promise<void> {
+		this.plugin.settings.subdomain = site?.subdomain || '';
+		this.plugin.settings.siteUrl = site?.siteUrl || '';
+		this.plugin.settings.siteEditUrl = site?.siteEditUrl || '';
+		this.infoDiv.textContent = msg ? msg : '';
 		await this.plugin.saveSettings();
 	}
 
@@ -66,9 +66,9 @@ class MixaSettingTab extends PluginSettingTab {
 
 		containerEl.createEl('h2', { text: 'Mixa Settings' });
 		containerEl.createEl("a", undefined, link => {
-			link.href = 'https://mixa.site'
+			link.href = 'https://mixa.site';
 			link.innerText = `https://mixa.site`;
-		})
+		});
 
 		new Setting(containerEl)
 			.setName('Secret Token')
@@ -81,19 +81,19 @@ class MixaSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 
 					try {
-						this.infoDiv.textContent = 'Parsing your secret token'
-						const site = await getSiteData(value)
-						this.infoDiv.textContent = ''
+						this.infoDiv.textContent = 'Parsing your secret token';
+						const site = await getSiteData(value);
+						this.infoDiv.textContent = '';
 						if (site) {
-							await this.updateSiteSettings(site)
+							await this.updateSiteSettings(site);
 						} else {
-							await this.updateSiteSettings(null, 'Please add a valid Secret Token. You can find it in your Mixa Dashboard')
+							await this.updateSiteSettings(null, 'Please add a valid Secret Token. You can find it in your Mixa Dashboard');
 						}
 					} catch (error) {
-						await this.updateSiteSettings(null, 'Please add a valid Secret Token. You can find it in your Mixa Dashboard')
-						error.response.data.errorText && new Notice(error.response.data.errorText)
+						await this.updateSiteSettings(null, 'Please add a valid Secret Token. You can find it in your Mixa Dashboard');
+						error.response.data.errorText && new Notice(error.response.data.errorText);
 					}
-					refreshSiteInfo(containerEl, this.plugin.settings)
+					refreshSiteInfo(containerEl, this.plugin.settings);
 
 				}, 1000, true)));
 
@@ -118,33 +118,33 @@ class MixaSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		createSiteInfo(containerEl, this.plugin.settings)
-		refreshSiteInfo(containerEl, this.plugin.settings)
+		createSiteInfo(containerEl, this.plugin.settings);
+		refreshSiteInfo(containerEl, this.plugin.settings);
 
 		new Setting(containerEl)
 			.addButton((button) => {
 				button.setButtonText("Publish").onClick(async (e) => {
 					if (!this.plugin.settings.subdomain) {
 						// infoDiv.textContent = 'Please add a valid Secret Token. You can find it in your Mixa Dashboard'
-						return
+						return;
 					}
 					try {
-						this.infoDiv.textContent = 'We are publishing your site, hang tight'
-						await syncData(this.plugin.settings, this.app.vault)
-						this.infoDiv.textContent = 'Your site is ready'
+						this.infoDiv.textContent = 'We are publishing your site, hang tight';
+						await syncData(this.plugin.settings, this.app.vault);
+						this.infoDiv.textContent = 'Your site is ready';
 					} catch (error) {
-						this.infoDiv.textContent = error.message || 'Failed to publish your site. Please try again, or contact support@mixa.site'
+						this.infoDiv.textContent = error.message || 'Failed to publish your site. Please try again, or contact support@mixa.site';
 					}
 				});
-			})
+			});
 
-		this.infoDiv = containerEl.createDiv()
+		this.infoDiv = containerEl.createDiv();
 	}
 }
 
 function createSiteInfo(containerEl: HTMLElement, settings: MixaSettings) {
-	createSettingItemLink(containerEl, 'Site', 'Check out your live site here', 'mixa-site-url')
-	createSettingItemLink(containerEl, 'Site Edit', 'You can edit your site with Mixa\'s live preview editor', 'mixa-site-edit-url')
+	createSettingItemLink(containerEl, 'Site', 'Check out your live site here', 'mixa-site-url');
+	createSettingItemLink(containerEl, 'Site Edit', 'You can edit your site with Mixa\'s live preview editor', 'mixa-site-edit-url');
 }
 
 function refreshSiteInfo(containerEl: HTMLElement, settings: MixaSettings) {
@@ -155,18 +155,18 @@ function refreshSiteInfo(containerEl: HTMLElement, settings: MixaSettings) {
 		containerEl.find('#mixa-site-edit-url').innerText = settings.siteEditUrl;
 		containerEl.findAll('.mixa-setting-item').forEach(e => e.show());
 	} else {
-		containerEl.findAll('.mixa-setting-item').forEach(e => e.hide())
+		containerEl.findAll('.mixa-setting-item').forEach(e => e.hide());
 	}
 }
 
 function createSettingItemLink(containerEl: HTMLElement, name: string, description: string, linkId: string) {
-	const settingItem = containerEl.createDiv({ cls: 'setting-item mixa-setting-item' })
-	const info = settingItem.createDiv({ cls: 'setting-item-info' })
-	const control = settingItem.createDiv({ cls: 'setting-item-control' })
+	const settingItem = containerEl.createDiv({ cls: 'setting-item mixa-setting-item' });
+	const info = settingItem.createDiv({ cls: 'setting-item-info' });
+	const control = settingItem.createDiv({ cls: 'setting-item-control' });
 
-	info.createDiv({ cls: 'setting-item-name', text: name })
-	info.createDiv({ cls: 'setting-item-description', text: description })
+	info.createDiv({ cls: 'setting-item-name', text: name });
+	info.createDiv({ cls: 'setting-item-description', text: description });
 	control.createEl("a", undefined, linkEl => {
-		linkEl.id = linkId
-	})
+		linkEl.id = linkId;
+	});
 }

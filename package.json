@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-mixa",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Publish your notes and blog posts with Mixa directly from Obsidian",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
