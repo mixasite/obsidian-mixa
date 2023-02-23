@@ -1,6 +1,10 @@
 import { FileSystemAdapter, Notice, Vault } from "obsidian";
 import axios from 'axios';
 import { MixaSettings } from "types";
+import { join } from 'path'
+import { existsSync } from 'fs'
+import { S3Client } from "@aws-sdk/client-s3";
+import S3SyncClient from 's3-sync-client';
 
 const API_BASE = 'https://app.mixa.site/api';
 const BUCKET_NAME = 'resource.mixa.site';
@@ -54,10 +58,6 @@ export async function getAdditionalFiles(vault: Vault, siteFolder: string) {
 export async function syncData(settings: MixaSettings, vault: Vault) {
     // should give a notice to the user here for mobile devices (without node envrionment) and exit
     const rootFolderAbsPath = getBasePath();
-
-    const join = (await import('path')).join;
-    const existsSync = (await import('fs')).existsSync;
-
     const siteFolder = stripSlash(settings.siteFolder);
     const localFolder = join(rootFolderAbsPath, siteFolder);
 
@@ -90,9 +90,6 @@ export async function syncData(settings: MixaSettings, vault: Vault) {
 }
 
 async function syncToS3(creds: any, rootFolderAbsPath: string, siteFolder: string, s3Path: string, additionalFiles: string[]) {
-    const S3SyncClient = await import('s3-sync-client');
-    const S3Client = (await import('@aws-sdk/client-s3')).S3Client;
-
     const s3Client = new S3Client({
         region: S3_REGION,
         forcePathStyle: true,
