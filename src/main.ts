@@ -19,10 +19,18 @@ export default class MixaPlugin extends Plugin {
 
 		// This creates an icon in the left ribbon.
 		this.addRibbonIcon('paper-plane', 'Publish with Mixa', async (evt: MouseEvent) => {
+			if (!this.settings.subdomain) {
+				new Notice('Please add a valid Secret Token. You can find it in your Mixa Dashboard');
+				return;
+			}
+
 			new Notice('Publishing your site, hang tight...');
-			// Called when the user clicks the icon.
-			await syncData(this.settings, this.app.vault);
-			new Notice('Your site is live');
+			try {
+				await syncData(this.settings, this.app.vault);
+				new Notice('Changes are published to your site successfully');
+			} catch (error) {
+				new Notice(error.message || 'Failed to publish your site. Please try again, or contact support@mixa.site');
+			}
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
@@ -125,13 +133,13 @@ class MixaSettingTab extends PluginSettingTab {
 			.addButton((button) => {
 				button.setButtonText("Publish").onClick(async (e) => {
 					if (!this.plugin.settings.subdomain) {
-						// infoDiv.textContent = 'Please add a valid Secret Token. You can find it in your Mixa Dashboard'
+						this.infoDiv.textContent = 'Please add a valid Secret Token. You can find it in your Mixa Dashboard'
 						return;
 					}
 					try {
 						this.infoDiv.textContent = 'We are publishing your site, hang tight';
 						await syncData(this.plugin.settings, this.app.vault);
-						this.infoDiv.textContent = 'Your site is ready';
+						this.infoDiv.textContent = 'Changes are published to your site successfully';
 					} catch (error) {
 						this.infoDiv.textContent = error.message || 'Failed to publish your site. Please try again, or contact support@mixa.site';
 					}
