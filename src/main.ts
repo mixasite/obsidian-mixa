@@ -18,7 +18,7 @@ export default class MixaPlugin extends Plugin {
 		await this.loadSettings();
 
 		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('paper-plane', 'Publish with Mixa', async (evt: MouseEvent) => {
+		this.addRibbonIcon('paper-plane', this.settings.siteUrl ? `Publish to ${this.settings.siteUrl.replace(/(^\w+:|^)\/\//, '')} with Mixa` : 'Publish with Mixa', async (evt: MouseEvent) => {
 			if (!this.settings.subdomain) {
 				new Notice('Please add a valid Secret Token. You can find it in your Mixa Dashboard');
 				return;
@@ -26,7 +26,7 @@ export default class MixaPlugin extends Plugin {
 
 			new Notice('Publishing your site, hang tight...');
 			try {
-				await syncData(this.settings, this.app.vault);
+				await syncData(this.settings, this.app.vault, this.app.metadataCache);
 				new Notice('Changes are published to your site successfully');
 			} catch (error) {
 				new Notice(error.message || 'Failed to publish your site. Please try again, or contact support@mixa.site');
@@ -53,6 +53,7 @@ export default class MixaPlugin extends Plugin {
 class MixaSettingTab extends PluginSettingTab {
 	plugin: MixaPlugin;
 	infoDiv: HTMLDivElement;
+	fileDiv: HTMLDivElement;
 
 	constructor(app: App, plugin: MixaPlugin) {
 		super(app, plugin);
@@ -64,7 +65,22 @@ class MixaSettingTab extends PluginSettingTab {
 		this.plugin.settings.siteUrl = site?.siteUrl || '';
 		this.plugin.settings.siteEditUrl = site?.siteEditUrl || '';
 		this.infoDiv.textContent = msg ? msg : '';
+		this.fileDiv.innerHTML = ''
 		await this.plugin.saveSettings();
+	}
+
+	renderFileInfo(files: { deletions: { id: string; }[]; uploads: { id: string; }[]; ignored: { id: string; }[] }) {
+		this.infoDiv.textContent = '';
+
+		if (!files.uploads.length && !files.deletions.length) {
+			this.fileDiv.innerHTML = "Nothing to upload"
+		} else {
+			this.fileDiv.innerHTML = '<div style="height: 200px; overflow-y: auto;">' +
+				files.uploads.map((file: { id: string }) => `<div style="color: green">${file.id}</div>`).join('') +
+				files.deletions.map((file: { id: string }) => `<div style="color: red">${file.id} - deleted</div>`).join('') +
+				files.ignored.map((file: { id: string }) => `<div style="color: orange">${file.id} - ignored</div>`).join('') +
+				'</div>';
+		}
 	}
 
 	display(): void {
@@ -131,15 +147,34 @@ class MixaSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.addButton((button) => {
+				button.setButtonText("Show Changes").onClick(async (e) => {
+					if (!this.plugin.settings.subdomain) {
+						this.infoDiv.textContent = 'Please add a valid Secret Token. You can find it in your Mixa Dashboard'
+						return;
+					}
+					try {
+						this.fileDiv.innerHTML = '';
+						this.infoDiv.textContent = 'We are checking the diff...';
+						const files = await syncData(this.plugin.settings, this.app.vault, this.app.metadataCache, true);
+						this.renderFileInfo(files)
+					} catch (error) {
+						this.infoDiv.textContent = error.message || 'Failed to get the diff for your site. Please try again, or contact support@mixa.site';
+						this.fileDiv.innerHTML = '';
+					}
+				});
+			})
+			.addButton((button) => {
 				button.setButtonText("Publish").onClick(async (e) => {
 					if (!this.plugin.settings.subdomain) {
 						this.infoDiv.textContent = 'Please add a valid Secret Token. You can find it in your Mixa Dashboard'
 						return;
 					}
 					try {
+						this.fileDiv.innerHTML = '';
 						this.infoDiv.textContent = 'We are publishing your site, hang tight';
-						await syncData(this.plugin.settings, this.app.vault);
+						const files = await syncData(this.plugin.settings, this.app.vault, this.app.metadataCache);
 						this.infoDiv.textContent = 'Changes are published to your site successfully';
+						this.renderFileInfo(files)
 					} catch (error) {
 						this.infoDiv.textContent = error.message || 'Failed to publish your site. Please try again, or contact support@mixa.site';
 					}
@@ -147,6 +182,7 @@ class MixaSettingTab extends PluginSettingTab {
 			});
 
 		this.infoDiv = containerEl.createDiv();
+		this.fileDiv = containerEl.createDiv();
 	}
 }
 

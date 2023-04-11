@@ -8,6 +8,19 @@ Mixa is a 1-click no-code site builder with tons of features for you to share yo
 - [Community](https://mixasite.talkyard.net/)
 - [Email support@mixa.site](mailto:support@mixa.site)
 
+## Release notes
+### 1.0.1
+- Now you can see what is going to be published by clicking "Show Changes" Button in the plugin settings page. It will show which files will be published and which ones are deleted. If all looks good, you can click "Publish" to publish your changes with peace of mind
+- You can disable publishing individual files by adding `draft: true` frontmatter 
+```
+---
+draft: true
+---
+
+Some note that will not be published till draft frontmatter is removed or changed to false
+```
+
+
 ## Mixa Demo
 ### With Obsidian
 [![Mixa Obsidian Demo](./mixa_obs_thumbnail.png)](https://youtu.be/FrvZd2pdX-g)

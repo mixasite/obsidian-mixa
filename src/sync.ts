@@ -1,10 +1,11 @@
-import { FileSystemAdapter, Notice, Vault } from "obsidian";
+import { FileSystemAdapter, MetadataCache, Notice, Vault } from "obsidian";
 import axios from 'axios';
 import { MixaSettings } from "types";
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { S3Client } from "@aws-sdk/client-s3";
 import S3SyncClient from 's3-sync-client';
+import mime from 'mime-types'
 
 const API_BASE = 'https://app.mixa.site/api';
 const BUCKET_NAME = 'resource.mixa.site';
@@ -55,7 +56,17 @@ export async function getAdditionalFiles(vault: Vault, siteFolder: string) {
     return filesToCopy;
 }
 
-export async function syncData(settings: MixaSettings, vault: Vault) {
+function getDraftFiles(vault: Vault, metadataCache: MetadataCache): string[] {
+    return vault.getMarkdownFiles()
+        .map(f => f.path)
+        .filter(path => {
+            const cache = metadataCache.getCache(path)
+            const draftVal = cache?.frontmatter?.draft
+            return draftVal === true || draftVal === 'true'
+        })
+}
+
+export async function syncData(settings: MixaSettings, vault: Vault, metadataCache: MetadataCache, isDryRun?: boolean) {
     // should give a notice to the user here for mobile devices (without node envrionment) and exit
     const rootFolderAbsPath = getBasePath();
     const siteFolder = stripSlash(settings.siteFolder);
@@ -73,6 +84,7 @@ export async function syncData(settings: MixaSettings, vault: Vault) {
             console.error(err);
         }
     }
+    const draftFiles = getDraftFiles(vault, metadataCache)
 
     const { data: creds } = await client.get(`/site/token/${settings.secretToken}/auth`);
     if (!creds || !Object.keys(creds).length) {
@@ -81,15 +93,19 @@ export async function syncData(settings: MixaSettings, vault: Vault) {
 
     const s3Path = `s3://${BUCKET_NAME}/${settings.subdomain}`;
     try {
-        await syncToS3(creds, rootFolderAbsPath, siteFolder, s3Path, additionalFiles);
+        const res = await syncToS3(creds, rootFolderAbsPath, siteFolder, s3Path, additionalFiles, draftFiles, isDryRun);
+        if (isDryRun) {
+            return res
+        }
         await client.post(`/site/token/${settings.secretToken}/build`);
+        return res
     } catch (err) {
         console.error(err);
         throw err;
     }
 }
 
-async function syncToS3(creds: any, rootFolderAbsPath: string, siteFolder: string, s3Path: string, additionalFiles: string[]) {
+async function syncToS3(creds: any, rootFolderAbsPath: string, siteFolder: string, s3Path: string, additionalFiles: string[], draftFiles: string[], isDryRun?: boolean) {
     const s3Client = new S3Client({
         region: S3_REGION,
         forcePathStyle: true,
@@ -99,15 +115,28 @@ async function syncToS3(creds: any, rootFolderAbsPath: string, siteFolder: strin
     const { sync } = new S3SyncClient({ client: s3Client });
 
     console.log(`syncing files to s3. local: ${siteFolder}, remote: ${s3Path}`);
-    console.log(`additional files being sent ${additionalFiles}`);
+    console.log(`additional files to send: ${additionalFiles}`);
+    console.log(`draft files, not send: ${draftFiles}`);
 
-    return await sync(rootFolderAbsPath, s3Path, {
+    const res = await sync(rootFolderAbsPath, s3Path, {
         del: true,
+        dryRun: !!isDryRun,
         relocations: [
             [siteFolder, '']
         ],
         filters: [
             { exclude: (key: string) => key.split('/').some(n => n.startsWith('.')) || (siteFolder && !key.startsWith(`${siteFolder}/`) && !additionalFiles.contains(key)) },
+            { exclude: (key: string) => draftFiles.contains(key) },
         ],
+        commandInput: {
+            ContentType: (syncCommandInput: {Key: string}) => (
+                mime.lookup(syncCommandInput.Key)
+            ),
+        },
     });
+    return {
+        deletions: res.deletions || [],
+        uploads: res.uploads || [],
+        ignored: draftFiles.map(p => ({id: p})) || [],
+    }
 }
