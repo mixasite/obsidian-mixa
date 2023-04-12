@@ -70,8 +70,6 @@ class MixaSettingTab extends PluginSettingTab {
 	}
 
 	renderFileInfo(files: { deletions: { id: string; }[]; uploads: { id: string; }[]; ignored: { id: string; }[] }) {
-		this.infoDiv.textContent = '';
-
 		if (!files.uploads.length && !files.deletions.length) {
 			this.fileDiv.innerHTML = "Nothing to upload"
 		} else {
@@ -157,6 +155,7 @@ class MixaSettingTab extends PluginSettingTab {
 						this.infoDiv.textContent = 'We are checking the diff...';
 						const files = await syncData(this.plugin.settings, this.app.vault, this.app.metadataCache, true);
 						this.renderFileInfo(files)
+						this.infoDiv.textContent = '';
 					} catch (error) {
 						this.infoDiv.textContent = error.message || 'Failed to get the diff for your site. Please try again, or contact support@mixa.site';
 						this.fileDiv.innerHTML = '';
