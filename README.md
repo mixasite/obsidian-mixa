@@ -2,7 +2,7 @@
 Mixa is a 1-click no-code site builder with tons of features for you to share your notes and blog posts in seconds.
 
 - [Mixa](https://mixa.site)
-- [Docs](https://docs.mixa.site)
+- [Docs](https://mixa.site/docs)
 - [Roadmap](https://trello.com/b/UG0i4eJR/mixa-roadmap)
 - [Discord](https://discord.com/invite/z3xNMHjUt7)
 - [Community](https://mixasite.talkyard.net/)
