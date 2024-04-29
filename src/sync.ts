@@ -91,7 +91,7 @@ export async function syncData(settings: MixaSettings, vault: Vault, metadataCac
         throw Error(`Could not upload the files due to an unknown error, please contact support@mixa.site`);
     }
 
-    const s3Path = `s3://${BUCKET_NAME}/${settings.subdomain}`;
+    const s3Path = `s3://${BUCKET_NAME}/${settings.subdomain}/`;
     try {
         const res = await syncToS3(creds, rootFolderAbsPath, siteFolder, s3Path, additionalFiles, draftFiles, isDryRun);
         if (isDryRun) {

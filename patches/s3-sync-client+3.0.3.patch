@@ -1,0 +1,13 @@
+diff --git a/node_modules/s3-sync-client/lib/commands/bucket-with-local.js b/node_modules/s3-sync-client/lib/commands/bucket-with-local.js
+index bc5a23c..8862c09 100644
+--- a/node_modules/s3-sync-client/lib/commands/bucket-with-local.js
++++ b/node_modules/s3-sync-client/lib/commands/bucket-with-local.js
+@@ -24,7 +24,7 @@ async function bucketWithLocal(localDir, bucketPrefix, options = {}) {
+         this.listBucketObjects(bucket, { prefix }),
+     ]);
+     if (prefix !== '') {
+-        relocations.push(['', prefix]);
++        relocations.push(['', prefix.replace(/\/$/, '')]);
+     }
+     sourceObjects.forEach((sourceObject) => sourceObject.applyFilters(filters));
+     const includedSourceObjects = sourceObjects.filter((sourceObject) => sourceObject.isIncluded());
